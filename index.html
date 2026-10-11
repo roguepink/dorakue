@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#000000">
 <meta name="description" content="レトロRPG風の縦スクロールシューティング。勇者たちの隊列を操作し、呪文コマンドで魔王を倒せ！">
 <title>ゆうしゃの たいれつ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -288,9 +292,22 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
 function wake(){ AU.init(); AU.resume(); }
+function toggleFS(){
+  const el=document.documentElement;
+  try{ if(!(document.fullscreenElement||document.webkitFullscreenElement)){ const f=el.requestFullscreen||el.webkitRequestFullscreen; if(f)f.call(el); }
+  else { const f=document.exitFullscreen||document.webkitExitFullscreen; if(f)f.call(document); } }catch(e){}
+}
+document.addEventListener('fullscreenchange',()=>setTimeout(resize,50));
+function drawTopIcons(){
+  txt(AU.on?'♪':'×',W-28,6,13,'#fff','center');
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2; const x=W-74,y=9;
+  ctx.beginPath(); ctx.moveTo(x,y+5);ctx.lineTo(x,y);ctx.lineTo(x+5,y); ctx.moveTo(x+9,y);ctx.lineTo(x+14,y);ctx.lineTo(x+14,y+5); ctx.moveTo(x+14,y+9);ctx.lineTo(x+14,y+14);ctx.lineTo(x+9,y+14); ctx.moveTo(x+5,y+14);ctx.lineTo(x,y+14);ctx.lineTo(x,y+9); ctx.stroke();
+}
+function topIconHit(p){ if(p.y<0||p.y>=44)return null; if(p.x>W-44)return 'audio'; if(p.x>W-90)return 'fs'; return null; }
 function onPress(code){
   wake();
   if(code==='KeyM'){AU.toggle();return;}
+  if(code==='KeyF'){toggleFS();return;}
   if(!G||G.state==='title'){ if(['KeyZ','Enter','Space','KeyX'].includes(code))startGame(); return; }
   if(code==='KeyP'&&G.state==='play'){G.paused=!G.paused;return;}
   if(G.paused)return;
@@ -308,8 +325,8 @@ function onPress(code){
 function canvasPos(e){ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/VS,y:(e.clientY-r.top)/VS}; }
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault(); wake(); const p=canvasPos(e);
-  if(!G||G.state==='title'){ if(p.x>W-44&&p.y<44){AU.toggle();return;} startGame(); return; }
-  if(p.x>W-44&&p.y<44&&p.y>=0){AU.toggle();return;}
+  const ic=topIconHit(p); if(ic==='audio'){AU.toggle();return;} if(ic==='fs'){toggleFS();return;}
+  if(!G||G.state==='title'){ startGame(); return; }
   if(G.paused){G.paused=false;return;}
   if(G.state==='over'||G.state==='clear'){ if((G.state==='over'?G.overT:G.clearT)>1.5){G=null;toTitle();} return; }
   if(G.state!=='play')return;
@@ -719,8 +736,7 @@ function drawHud(){
   // 呪文ボタン
   const bx=W-42,by=H-118; ctx.globalAlpha=0.75; ctx.fillStyle='#101030'; ctx.beginPath(); ctx.arc(bx,by,28,0,7); ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke(); ctx.globalAlpha=1;
   txt('じゅもん',bx,by-11,10,'#fff','center'); txt('MP'+G.mp,bx,by+2,10,'#c0a0ff','center');
-  // 音量
-  txt(AU.on?'♪':'×',W-28,6,13,'#fff','center');
+  drawTopIcons();
   if(G.paused){ ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,W,H); txt('PAUSE',W/2,H/2-10,24,'#fff','center',true); }
 }
 function drawMenu(){
@@ -741,12 +757,12 @@ function drawTitle(){
   const by=250+Math.sin(titleT*6)*3; const xs=W/2-54+(titleT*30)%(W+140)-70;
   const list=['hero','war','mage','priest']; list.forEach((k,i)=>dspr(SPR[k],xs-i*32,by+Math.sin(titleT*10+i)*2));
   win(20,290,W-40,190);
-  const lines=['いどう： ほうこうキー / WASD / ドラッグ','じゅもん： X / Enter / がめんのボタン','こうげきは オートで おこなわれる','なかまが たおれると ひつぎになり','そうりょが いきていれば いきかえる かも','M： おんりょう ON/OFF   P： ポーズ'];
+  const lines=['いどう： ほうこうキー / WASD / ドラッグ','じゅもん： X / Enter / がめんのボタン','こうげきは オートで おこなわれる','なかまが たおれると ひつぎになり','そうりょが いきていれば いきかえる かも','M： おんりょう  F： ぜんがめん  P： ポーズ'];
   lines.forEach((s,i)=>txt(s,36,306+i*26,12,i===3||i===4?'#c0e0ff':'#fff'));
   if(Math.floor(titleT*2)%2===0)txt('▶ Z / Enter / タップ で はじめる',W/2,520,14,'#fff','center',true);
   txt('さいこうきろく： '+best+'G',W/2,560,12,'#ffe060','center');
   txt('♪ BGM・こうかおんは すべて オリジナル',W/2,600,10,'#a0a0c0','center');
-  txt(AU.on?'♪':'×',W-28,6,13,'#fff','center');
+  drawTopIcons();
 }
 function drawEnd(){
   const over=G.state==='over'; const t=over?G.overT:G.clearT; if(t<0.8)return;
