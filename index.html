@@ -400,6 +400,7 @@ function startStage(i){
 const L=()=>G?G.stage:0;                      // 章インデックス（難易度係数）
 const SM=()=>1+0.05*L();                      // 敵弾スピード倍率
 const EDMG=b=>b+(L()>=3?1:0)+(L()>=6?1:0)+(L()>=8?1:0); // 敵弾ダメージ
+const FINAL=()=>L()>=STAGES.length-1;     // 最終章：弾数をひかえめに
 
 // ---------------------------------------------------------------- Input
 const keys={};
@@ -688,11 +689,11 @@ function updateEnemies(d){
       case 'yurei':
         e.alpha=0.6+Math.sin(e.t*5)*0.25;
         if(e.phase===0){ e.y+=50*d; if(e.y>=p.stopY){e.phase=1;e.shootT=1.0;} }
-        else if(e.phase===1){ e.shootT-=d; if(e.shootT<=0){ aimAt(e,hp.x,hp.y,115,0,'#c0c0ff'); if(L()>=4){aimAt(e,hp.x,hp.y,115,0.25,'#c0c0ff');aimAt(e,hp.x,hp.y,115,-0.25,'#c0c0ff');} e.phase=2; e.shootT=1.4; } }
+        else if(e.phase===1){ e.shootT-=d; if(e.shootT<=0){ aimAt(e,hp.x,hp.y,115,0,'#c0c0ff'); if(L()>=4&&!FINAL()){aimAt(e,hp.x,hp.y,115,0.25,'#c0c0ff');aimAt(e,hp.x,hp.y,115,-0.25,'#c0c0ff');} e.phase=2; e.shootT=1.4; } }
         else { e.shootT-=d; if(e.shootT<=0)e.y+=75*d; }
         break;
-      case 'kozuchi': e.y+=36*d; e.shootT-=d; if(e.shootT<=0&&e.y>20){ e.shootT=Math.max(1.4,2.4-0.1*L()); for(const s of [-0.35,0,0.35])aimAt(e,hp.x,hp.y,105,s,'#ffd060'); } break;
-      case 'hanetori': e.x+=p.dir*105*d; e.y=p.y0+Math.sin(e.t*2.5)*50; e.shootT-=d; if(e.shootT<=0){e.shootT=Math.max(1.0,1.6-0.06*L()); aimAt(e,hp.x,hp.y,125,0,'#ff9060');} break;
+      case 'kozuchi': e.y+=36*d; e.shootT-=d; if(e.shootT<=0&&e.y>20){ e.shootT=FINAL()?3.0:Math.max(1.4,2.4-0.1*L()); for(const s of (FINAL()?[-0.3,0.3]:[-0.35,0,0.35]))aimAt(e,hp.x,hp.y,105,s,'#ffd060'); } break;
+      case 'hanetori': e.x+=p.dir*105*d; e.y=p.y0+Math.sin(e.t*2.5)*50; e.shootT-=d; if(e.shootT<=0){e.shootT=FINAL()?2.4:Math.max(1.0,1.6-0.06*L()); aimAt(e,hp.x,hp.y,125,0,'#ff9060');} break;
       case 'mimikka':{ const a=Math.atan2(hp.y-e.y,hp.x-e.x); e.x+=Math.cos(a)*60*d; e.y+=Math.sin(a)*60*d; break; }
       default: if(e.boss)updateBoss(e,d,hp);
     }
@@ -758,7 +759,7 @@ function updateBoss(e,d,hp){
       if(p2&&!e.p2){ e.p2=true; addMsg(nm+'は ほんとうの すがたを あらわした！'); SFX.roar(); G.flash={col:'rgba(160,0,60,0.6)',t:0.5}; G.shake=10; e.atk=1.5; e.skull=3; e.wave=9; ring(e.x,e.y,'#ff4060',160,0.6); }
       e.x=W/2+Math.sin(e.t*(p2?1.6:1.1))*95; e.y=e.targetY+Math.sin(e.t*1.5)*10;
       e.ring=(e.ring||0)+d*0.7;
-      if(e.atk<=0){ e.atk=p2?1.8:2.3; ringShot(e,p2?16:12,88,'#d080ff',4,3,e.ring); }
+      if(e.atk<=0){ e.atk=p2?2.0:2.5; ringShot(e,p2?13:10,88,'#d080ff',4,3,e.ring); }
       e.aim=(e.aim||0)-d; if(e.aim<=0){ e.aim=1.4; aimAt(e,hp.x,hp.y,140,-0.08,'#ff80c0'); aimAt(e,hp.x,hp.y,140,0.08,'#ff80c0'); }
       if(p2){ e.skull-=d; if(e.skull<=0){ e.skull=4.5; addMsg(nm+'は ダークボールを はなった！'); for(const s of [-1,1])G.eb.push({x:e.x+s*30,y:e.y,vx:s*40,vy:50,r:7,col:'#c0a0ff',dmg:EDMG(9),life:6,home:1.6,skull:true}); }
         e.wave-=d; if(e.wave<=0){ e.wave=13; addMsg(nm+'は まりょくふうじを はなった！ MPが きえた！'); G.mp=0; SFX.wave(); G.flash={col:'rgba(120,200,255,0.5)',t:0.4}; ring(e.x,e.y,'#80d0ff',300,0.6); } }
