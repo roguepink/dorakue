@@ -545,10 +545,15 @@ function spawnWave(){
   }
   if(G.t-G.lastKillMsg>2.5){ addMsg(ENEMY[type].name+'の むれが あらわれた！'); G.lastKillMsg=G.t; }
 }
-function spawnBoss(){
-  const def=BOSSES[G.stage]; const b=spawnEnemy(def,W/2,-110); b.targetY=def.ty; G.boss=b;
-  addMsg(def.name+'が あらわれた！'); SFX.roar(); G.shake=10; G.banner={t:3,name:def.name,sub:def.sub};
-  SEQ.play(def.pattern==='maou'?'last':'boss');
+function awaken(def){
+  return Object.assign({},def,{name:def.name+'・かくせい',sub:'しんの ちからを かいほうした',hp:Math.ceil(def.hp*1.6),scale:def.scale*1.2,r:def.r*1.2,ty:def.ty+12,sc:Math.ceil(def.sc*1.5),stage2:true,
+    filter:def.pattern==='maou'?'saturate(1.6) brightness(1.15)':'hue-rotate(200deg) saturate(1.5) contrast(1.15)'});
+}
+function spawnBoss(def){
+  def=def||BOSSES[G.stage]; const b=spawnEnemy(def,W/2,-120); b.targetY=def.ty; G.boss=b; if(def.stage2)b.spd=1.15;
+  addMsg(def.name+'が あらわれた！'); SFX.roar(); G.shake=def.stage2?16:10; G.banner={t:3,name:def.name,sub:def.sub};
+  if(def.stage2){ G.flash={col:'rgba(200,0,40,0.55)',t:0.6}; ring(W/2,def.ty,'#ff4060',240,0.7); }
+  else SEQ.play(def.pattern==='maou'?'last':'boss');
 }
 function nearestEnemy(x,y,preferBoss){
   let best=null,bd=1e9;
@@ -612,7 +617,7 @@ function updateParty(d){
         for(const ox of xs)G.pb.push({x:m.x+ox,y:m.y-18,vx:0,vy:-560,r:4,dmg,kind:'arrow',pierce,hit:new Set(),col,life:1.5});
         SFX.shoot();
       } else {
-        m.cd=0.8-0.07*g; const dmg=4+1.4*g; const n=g>=5?3:g>=3?2:1;
+        m.cd=0.8-0.07*g; const dmg=2+0.7*g; const n=g>=5?3:g>=3?2:1;
         for(let i=0;i<n;i++){ const a=n===1?0:(i-(n-1)/2)*0.7; const tg=nearestEnemy(m.x,m.y,false); G.pb.push({x:m.x,y:m.y-10,vx:Math.sin(a)*300,vy:-Math.cos(a)*300,r:11,dmg,kind:'boom',home:4+0.6*g,tg,col,life:3,rot:0}); }
         SFX.slash();
       }
@@ -658,17 +663,18 @@ function updateStage(d){
       if(bd.n<=0){bd.n=0.12; const px=bd.x+rnd(-40,40),py=bd.y+rnd(-40,40); burst(px,py,pick(['#ffd040','#ff9a30','#fff']),10,140); fx({k:'boom',x:px,y:py,r:36,life:0.4}); SFX.explode(); G.shake=8;}
       if(bd.t>1.9){ G.bossDying=null; SFX.bigexp(); burst(bd.x,bd.y,'#fff',50,240); ring(bd.x,bd.y,'#fff',200,0.6); fx({k:'boom',x:bd.x,y:bd.y,r:120,life:0.7}); G.flash={col:'rgba(255,255,255,0.85)',t:0.45};
         addMsg(bd.def.name+'を たおした！'); G.gold+=bd.def.sc; text(bd.x,bd.y,'+'+bd.def.sc+'G','#ffe060',16);
-        if(G.stage>=STAGES.length-1){ G.state='clear'; G.clearT=0; addMsg('せかいに へいわが もどった！'); SEQ.play('clear'); saveBest(); clearSave(); }
+        if(!bd.def.stage2){ addMsg('…しかし まだ おわっていない！'); spawnBoss(awaken(bd.def)); }
+        else if(G.stage>=STAGES.length-1){ G.state='clear'; G.clearT=0; addMsg('せかいに へいわが もどった！'); SEQ.play('clear'); saveBest(); clearSave(); }
         else { G.phase='clear'; G.phaseT=0; addMsg('だい'+(G.stage+1)+'しょう クリア！'); SEQ.play('clear'); } } }
   }else if(G.phase==='clear'){
     if(G.phaseT>3.5)startStage(G.stage+1);
   }
 }
 function aimAt(e,tx,ty,sp,spread,col,r,dmg,extra){
-  const a=Math.atan2(ty-e.y,tx-e.x)+(spread||0); sp*=SM();
+  const a=Math.atan2(ty-e.y,tx-e.x)+(spread||0); sp*=SM()*(e.spd||1);
   G.eb.push(Object.assign({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:r||4,col:col||'#ff8080',dmg:EDMG(dmg||3),life:7},extra||{}));
 }
-function ringShot(e,n,sp,col,r,dmg,off){ sp*=SM(); for(let i=0;i<n;i++){const a=i/n*TAU+(off||0); G.eb.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:r||4,col:col||'#ff8080',dmg:EDMG(dmg||3),life:8});} }
+function ringShot(e,n,sp,col,r,dmg,off){ sp*=SM()*(e.spd||1); for(let i=0;i<n;i++){const a=i/n*TAU+(off||0); G.eb.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:r||4,col:col||'#ff8080',dmg:EDMG(dmg||3),life:8});} }
 function headPos(){ const m=party.find(x=>x.alive)||party[0]; return {x:m.x,y:m.y}; }
 function updateEnemies(d){
   const hp=headPos();
@@ -698,7 +704,7 @@ function updateBoss(e,d,hp){
   const def=e.def, pat=def.pattern, nm=def.name;
   if(e.entering){ e.y+=(e.targetY-e.y)*Math.min(1,d*1.5); if(e.t>2.6){e.entering=false;e.atk=1.5;e.big=6;e.tp=3;} return; }
   if(G.bossDying)return;
-  e.atk-=d*1.3; e.big-=d*1.18;
+  e.atk-=d*(def.stage2?1.55:1.3); e.big-=d*(def.stage2?1.4:1.18);
   if(e.warn!=null){ e.warn-=d; if(e.warn<=0){ e.warn=null; G.shake=12; SFX.roar(); bossBig(e,hp); } return; }
   switch(pat){
     case 'slime':
@@ -1104,7 +1110,8 @@ function iceCrystal(x,y,r,a){
 function drawEnemies(){
   for(const e of G.enemies){
     if(e.boss){
-      ctx.save(); if(e.flash>0){ctx.filter='brightness(1.3) saturate(0.6)';}
+      if(e.def.stage2)dglow('#ff3050',e.r+70,e.x,e.y+10,0.35+0.15*Math.sin(e.t*5));
+      ctx.save(); ctx.filter=e.flash>0?'brightness(1.3) saturate(0.6)':(e.def.filter||'none');
       drawBossAt(e,e.def,e.x,e.y); ctx.restore();
       if(e.frozen>0)iceCrystal(e.x,e.y,e.r+16,0.55);
       continue;
@@ -1115,7 +1122,7 @@ function drawEnemies(){
     if(e.flash>0){ ctx.globalAlpha=0.7; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,TAU); ctx.fill(); ctx.globalAlpha=1; }
     if(e.frozen>0){ iceCrystal(e.x,e.y,e.r+6,0.6); dglow('#a0f0ff',e.r+12,e.x,e.y,0.4); }
   }
-  if(G.bossDying){ const bd=G.bossDying; ctx.save(); ctx.globalAlpha=Math.max(0,1-bd.t/1.9); drawBossAt({t:bd.t,warn:null,p2:bd.p2,alpha:1},bd.def,bd.x+rnd(-3,3),bd.y+rnd(-3,3)); ctx.restore(); }
+  if(G.bossDying){ const bd=G.bossDying; ctx.save(); ctx.globalAlpha=Math.max(0,1-bd.t/1.9); ctx.filter=bd.def.filter||'none'; drawBossAt({t:bd.t,warn:null,p2:bd.p2,alpha:1},bd.def,bd.x+rnd(-3,3),bd.y+rnd(-3,3)); ctx.restore(); }
 }
 function drawBullets(){
   for(const b of G.pb){
@@ -1179,7 +1186,7 @@ function drawHud(){
   txt(G.gold+'G',W-14,52,13,'#ffe060','right');
   const w=curW(); txt('ぶき',12,68,10,'#ffd080'); txt(w.name+' '+stars(curWLv()),38,68,10,'#fff');
   txt('まほう',W-118,68,10,'#d0a0ff','right'); txt(stars(G.mageLv),W-14,68,10,member('mage')?'#fff':'#70708a','right');
-  const b=G.boss; if(b&&!b.entering){ win(36,92,W-72,24,0.75); txt(b.def.name,46,97,11,'#ffb0b0'); bar(146,98,W-192,10,clamp(b.hp/b.maxHp,0,1),b.p2?'#ff4060':'#ff8040',b.p2?'#800020':'#803010'); }
+  const b=G.boss; if(b&&!b.entering){ win(36,92,W-72,24,0.75); txt(b.def.name,46,97,11,b.def.stage2?'#ff8090':'#ffb0b0'); bar(146,98,W-192,10,clamp(b.hp/b.maxHp,0,1),b.p2?'#ff4060':'#ff8040',b.p2?'#800020':'#803010'); }
   else { txt('だい'+(G.stage+1)+'しょう / '+STAGES.length,W-14,94,10,'rgba(255,255,255,0.6)','right'); }
   win(4,H-76,W-8,72);
   G.msgs.forEach((s,i)=>txt(s,16,H-64+i*19,12,i===G.msgs.length-1?'#fff':'#b8b8cc'));
