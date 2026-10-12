@@ -322,15 +322,15 @@ const ENEMY={
 };
 // ボス：章が進むほど大きく・強く
 const BOSSES=[
-  {key:'slimeking',name:'キングプルン',sub:'そうげんの ぬし',hp:70,r:30,sc:150,pattern:'slime',draw:'slime',scale:0.9,ty:150,col:'#78a8ff'},
-  {key:'bigbat',name:'ジャイアントバサキー',sub:'もりの あんさつしゃ',hp:110,r:32,sc:220,pattern:'bat',draw:'bat',scale:0.95,ty:165,col:'#c48aff'},
-  {key:'golem',name:'イワオトコ',sub:'がんせきの もりばん',hp:170,r:36,sc:300,pattern:'golem',draw:'golem',scale:0.85,ty:155,pal:'rock',col:'#b4b4c8'},
-  {key:'ghostlord',name:'ゴーストロード',sub:'はかばの おう',hp:220,r:34,sc:380,pattern:'ghost',draw:'ghost',scale:1,ty:190,col:'#e0e0ff'},
-  {key:'dragon',name:'ドラゴ',sub:'かざんの ばんりゅう',hp:290,r:40,sc:500,pattern:'dragon',draw:'dragon',scale:0.95,ty:190,pal:'green',col:'#3aa84a'},
-  {key:'icegolem',name:'アイスゴーレム',sub:'こおりの きょじん',hp:360,r:44,sc:620,pattern:'golem',draw:'golem',scale:1.1,ty:188,pal:'ice',col:'#a0e0ff'},
-  {key:'hellbird',name:'ヘルバード',sub:'てんくうの ほのおどり',hp:420,r:40,sc:750,pattern:'bird',draw:'bird',scale:1.05,ty:180,col:'#ff8030'},
-  {key:'blackdragon',name:'ブラックドラゴ',sub:'やみの こりゅう',hp:500,r:46,sc:900,pattern:'dragon',draw:'dragon',scale:1.15,ty:200,pal:'black',col:'#8040a0'},
-  {key:'darkknight',name:'やみのきし',sub:'まおうの しんえい',hp:580,r:40,sc:1100,pattern:'knight',draw:'knight',scale:1.1,ty:200,col:'#a0a0c0'},
+  {key:'slimeking',name:'キングプルン',sub:'そうげんの ぬし',hp:80,alts:['wall','summon','wave'],r:30,sc:150,pattern:'slime',draw:'slime',scale:0.9,ty:150,col:'#78a8ff'},
+  {key:'bigbat',name:'ジャイアントバサキー',sub:'もりの あんさつしゃ',hp:126,alts:['spiral','burst','wave'],r:32,sc:220,pattern:'bat',draw:'bat',scale:0.95,ty:165,col:'#c48aff'},
+  {key:'golem',name:'イワオトコ',sub:'がんせきの もりばん',hp:195,alts:['wall','cross','summon'],r:36,sc:300,pattern:'golem',draw:'golem',scale:0.85,ty:155,pal:'rock',col:'#b4b4c8'},
+  {key:'ghostlord',name:'ゴーストロード',sub:'はかばの おう',hp:253,alts:['spiral','wave','summon'],r:34,sc:380,pattern:'ghost',draw:'ghost',scale:1,ty:190,col:'#e0e0ff'},
+  {key:'dragon',name:'ドラゴ',sub:'かざんの ばんりゅう',hp:334,alts:['burst','cross','wall'],r:40,sc:500,pattern:'dragon',draw:'dragon',scale:0.95,ty:190,pal:'green',col:'#3aa84a'},
+  {key:'icegolem',name:'アイスゴーレム',sub:'こおりの きょじん',hp:414,alts:['wall','spiral','cross'],r:44,sc:620,pattern:'golem',draw:'golem',scale:1.1,ty:188,pal:'ice',col:'#a0e0ff'},
+  {key:'hellbird',name:'ヘルバード',sub:'てんくうの ほのおどり',hp:483,alts:['wave','burst','spiral'],r:40,sc:750,pattern:'bird',draw:'bird',scale:1.05,ty:180,col:'#ff8030'},
+  {key:'blackdragon',name:'ブラックドラゴ',sub:'やみの こりゅう',hp:575,alts:['cross','burst','wall'],r:46,sc:900,pattern:'dragon',draw:'dragon',scale:1.15,ty:200,pal:'black',col:'#8040a0'},
+  {key:'darkknight',name:'やみのきし',sub:'まおうの しんえい',hp:667,alts:['wall','cross','burst'],r:40,sc:1100,pattern:'knight',draw:'knight',scale:1.1,ty:200,col:'#a0a0c0'},
   {key:'maou',name:'まおうゾルガ',sub:'やみを すべる もの',hp:740,r:44,sc:2000,pattern:'maou',draw:'maou',scale:1.15,ty:215,col:'#c48aff'}
 ];
 BOSSES.forEach(b=>b.boss=true);
@@ -706,27 +706,29 @@ function updateBoss(e,d,hp){
   if(G.bossDying)return;
   e.atk-=d*(def.stage2?1.55:1.3); e.big-=d*(def.stage2?1.4:1.18);
   if(e.warn!=null){ e.warn-=d; if(e.warn<=0){ e.warn=null; G.shake=12; SFX.roar(); bossBig(e,hp); } return; }
+  if(def.alts){ e.alt=(e.alt==null?3.5:e.alt)-d*(def.stage2?1.25:1); if(e.alt<=0){ e.alt=def.stage2?3.6:4.6; e.altIdx=((e.altIdx==null?-1:e.altIdx)+1)%def.alts.length; bossAlt(e,hp,def.alts[e.altIdx]); } }
+  if(e.emit){ e.emit.t+=d; e.emit.acc+=d; while(e.emit.acc>=0.07){ e.emit.acc-=0.07; for(const s of [0,Math.PI]){ const a=e.emit.a+s; const sp=110*SM()*(e.spd||1); G.eb.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:4,col:'#ffb0ff',dmg:EDMG(3),life:8}); } e.emit.a+=0.38; } if(e.emit.t>=e.emit.dur)e.emit=null; }
   switch(pat){
     case 'slime':
       e.x=W/2+Math.sin(e.t*0.9)*90; e.y=e.targetY-Math.abs(Math.sin(e.t*3))*16;
-      if(e.atk<=0){ e.atk=2.4; for(const s of [-0.3,0,0.3])aimAt(e,hp.x,hp.y,90,s,'#80c0ff',5,3); }
+      if(e.atk<=0){ e.atk=2.4; for(const s of [-0.5,-0.25,0,0.25,0.5])aimAt(e,hp.x,hp.y,95,s,'#80c0ff',5,3); }
       if(e.big<=0){ e.big=9; e.warn=1.0; addMsg(nm+'は おおきく ふくらんだ！'); SFX.warn(); }
       break;
     case 'bat':
       e.x=W/2+Math.sin(e.t*1.6)*130; e.y=e.targetY+Math.sin(e.t*3.2)*25;
-      if(e.atk<=0){ e.atk=1.7; aimAt(e,hp.x,hp.y,125,-0.1,'#d090ff',4,3); aimAt(e,hp.x,hp.y,125,0.1,'#d090ff',4,3); }
+      if(e.atk<=0){ e.atk=1.7; for(const s of [-0.2,0,0.2])aimAt(e,hp.x,hp.y,125,s,'#d090ff',4,3); }
       if(e.big<=0){ e.big=9; e.warn=1.1; addMsg(nm+'は はねを おおきく ひろげた！'); SFX.warn(); }
       break;
     case 'ghost':
       e.y=e.targetY+Math.sin(e.t*1.5)*14; e.tp-=d;
       if(e.tp<=0){ e.tp=3.2; e.fade=0.6; e.nx=rnd(60,W-60); }
-      if(e.fade>0){ e.fade-=d; e.alpha=Math.abs(e.fade-0.3)/0.3; if(e.fade<=0.3&&e.nx!=null){ e.x=e.nx; e.nx=null; ringShot(e,8,100,'#c0c0ff',4,3,e.t); } } else e.alpha=1;
+      if(e.fade>0){ e.fade-=d; e.alpha=Math.abs(e.fade-0.3)/0.3; if(e.fade<=0.3&&e.nx!=null){ e.x=e.nx; e.nx=null; ringShot(e,10,100,'#c0c0ff',4,3,e.t); } } else e.alpha=1;
       if(e.atk<=0){ e.atk=2.0; aimAt(e,hp.x,hp.y,120,0,'#e0e0ff',5,3,{home:0.8}); }
       if(e.big<=0){ e.big=10; e.warn=1.1; addMsg(nm+'は うらみの こえを あげた！'); SFX.warn(); }
       break;
     case 'golem':
       e.x=W/2+Math.sin(e.t*0.8)*100;
-      if(e.atk<=0){ e.atk=def.pal==='ice'?1.7:2.0; const n=def.pal==='ice'?5:4; for(let i=0;i<n;i++)G.eb.push({x:e.x+rnd(-30,30),y:e.y+30,vx:rnd(-60,60),vy:70*SM(),g:60,r:6,col:def.pal==='ice'?'#a0e0ff':'#b4b4c8',dmg:EDMG(4),life:7}); }
+      if(e.atk<=0){ e.atk=def.pal==='ice'?1.7:2.0; const n=def.pal==='ice'?7:6; for(let i=0;i<n;i++)G.eb.push({x:e.x+rnd(-40,40),y:e.y+30,vx:rnd(-70,70),vy:70*SM(),g:60,r:6,col:def.pal==='ice'?'#a0e0ff':'#b4b4c8',dmg:EDMG(4),life:7}); }
       if(e.big<=0){ e.big=9.5; e.warn=1.3; addMsg(nm+'は ちからを ためている！'); SFX.warn(); }
       break;
     case 'dragon':{
@@ -734,20 +736,20 @@ function updateBoss(e,d,hp){
       e.x=W/2+Math.sin(e.t*1.2)*110; e.y=e.targetY+Math.sin(e.t*2)*12;
       if(e.atk<=0){ e.cnt=(e.cnt||0)+1; e.breath=0.6; const fc=blk?'#c040ff':'#ff8040';
         if(e.cnt%3===0){ e.atk=blk?2.6:3.2; addMsg(nm+'は ほのおの あめを ふらせた！'); for(let i=0;i<(blk?12:10);i++)G.eb.push({x:20+i*(blk?30:36)+rnd(-8,8),y:e.y,vx:0,vy:rnd(90,130)*SM(),r:5,col:fc,dmg:EDMG(4),life:7,delay:i*0.08}); }
-        else { e.atk=blk?2.1:2.6; addMsg(nm+'は はげしい ほのおを はいた！'); for(let i=-3;i<=3;i++)aimAt(e,hp.x,hp.y,130,i*0.14,fc,5,4); } }
+        else { e.atk=blk?2.1:2.6; addMsg(nm+'は はげしい ほのおを はいた！'); for(let i=-4;i<=4;i++)aimAt(e,hp.x,hp.y,130,i*0.13,fc,5,4); } }
       if(e.breath>0)e.breath-=d;
       if(e.big<=0){ e.big=12; e.warn=1.3; addMsg(nm+'は いきを すいこんでいる！'); SFX.warn(); }
       break;}
     case 'bird':
       e.x=W/2+Math.sin(e.t*1.5)*120; e.y=e.targetY+Math.sin(e.t*2.6)*20;
       if(e.atk<=0){ e.cnt=(e.cnt||0)+1;
-        if(e.cnt%2===0){ e.atk=2.4; addMsg(nm+'は ほのおの はねを ふらせた！'); for(let i=0;i<9;i++)G.eb.push({x:20+i*40+rnd(-10,10),y:e.y,vx:0,vy:rnd(100,140)*SM(),r:5,col:'#ff9040',dmg:EDMG(4),life:7,delay:i*0.07}); }
+        if(e.cnt%2===0){ e.atk=2.4; addMsg(nm+'は ほのおの はねを ふらせた！'); for(let i=0;i<11;i++)G.eb.push({x:14+i*33+rnd(-8,8),y:e.y,vx:0,vy:rnd(100,140)*SM(),r:5,col:'#ff9040',dmg:EDMG(4),life:7,delay:i*0.06}); }
         else { e.atk=2.0; for(let i=-2;i<=2;i++)aimAt(e,hp.x,hp.y,140,i*0.16,'#ffb040',5,4); } }
       if(e.big<=0){ e.big=9; e.warn=1.2; addMsg(nm+'の はねが もえあがった！'); SFX.warn(); }
       break;
     case 'knight':
       e.x=W/2+Math.sin(e.t*1.0)*100; e.y=e.targetY+Math.sin(e.t*2)*6;
-      if(e.atk<=0){ e.atk=2.0; e.swing=0.4; addMsg(nm+'は けんを なぎはらった！'); for(let i=-3;i<=3;i++)G.eb.push({x:e.x+i*30,y:e.y+30,vx:0,vy:115*SM(),r:5,col:'#ff6080',dmg:EDMG(4),life:7}); }
+      if(e.atk<=0){ e.atk=2.0; e.swing=0.4; addMsg(nm+'は けんを なぎはらった！'); for(let i=-4;i<=4;i++)G.eb.push({x:e.x+i*26,y:e.y+30,vx:0,vy:115*SM(),r:5,col:'#ff6080',dmg:EDMG(4),life:7}); }
       if(e.swing>0)e.swing-=d;
       if(e.big<=0){ e.big=9; e.warn=1.2; addMsg(nm+'は けんを たかく かかげた！'); SFX.warn(); }
       break;
@@ -762,6 +764,17 @@ function updateBoss(e,d,hp){
         e.wave-=d; if(e.wave<=0){ e.wave=13; addMsg(nm+'は まりょくふうじを はなった！ MPが きえた！'); G.mp=0; SFX.wave(); G.flash={col:'rgba(120,200,255,0.5)',t:0.4}; ring(e.x,e.y,'#80d0ff',300,0.6); } }
       if(e.big<=0){ e.big=11; e.warn=1.2; addMsg(nm+'は まりょくを あつめている！'); SFX.warn(); }
       break;}
+  }
+}
+function bossAlt(e,hp,kind){
+  const nm=e.def.name, sm=SM()*(e.spd||1);
+  switch(kind){
+    case 'wall':{ addMsg(nm+'は たまの かべを はなった！'); const gap=ri(1,9); for(let i=0;i<12;i++){ if(i===gap||i===gap+1)continue; G.eb.push({x:15+i*30,y:e.y+20,vx:0,vy:95*sm,r:5,col:'#ffd080',dmg:EDMG(4),life:8}); } break; }
+    case 'spiral': addMsg(nm+'は らせんの たまを はなった！'); e.emit={t:0,dur:1.3,acc:0,a:rnd(0,TAU)}; break;
+    case 'wave':{ addMsg(nm+'は うねる たまを はなった！'); for(let i=0;i<6;i++)G.eb.push({x:e.x+(i-2.5)*22,ox:e.x+(i-2.5)*22,y:e.y+10,vx:0,vy:100*sm,r:5,col:'#80ffd0',dmg:EDMG(3),life:8,wave:{amp:46,f:4.5,ph:i*0.9},age:0,delay:i*0.08}); break; }
+    case 'cross':{ addMsg(nm+'は じゅうじの たまを はなった！'); for(const a of [Math.PI/4,3*Math.PI/4,Math.PI/2+0.15,Math.PI/2-0.15]) for(let k=1;k<=3;k++){ const sp=(80+k*35)*sm; G.eb.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:5,col:'#ff9ad0',dmg:EDMG(4),life:8}); } break; }
+    case 'burst':{ addMsg(nm+'の れんぞく こうげき！'); for(let v=0;v<3;v++)for(let i=-2;i<=2;i++)aimAt(e,hp.x,hp.y,120+v*25,i*0.22,'#ffc080',4,3,{delay:v*0.3}); break; }
+    case 'summon':{ addMsg(nm+'は てしたを よびよせた！'); const n=e.def.stage2?3:2; for(let i=0;i<n;i++){ const t=pick(L()>=3?['purun','kozuchi','yurei']:['purun','kozuchi']); const x=clamp(e.x+(i-(n-1)/2)*70,30,W-30); const en=spawnEnemy(t,x,e.y+40,{ph:rnd(0,6),stopY:e.y+90+rnd(0,60)}); burst(en.x,en.y,'#d080ff',8,80); } break; }
   }
 }
 function bossBig(e,hp){
@@ -790,6 +803,7 @@ function updateBullets(d){
   for(const b of G.eb.slice()){
     if(b.delay>0){b.delay-=d;continue;}
     b.life-=d; if(b.g)b.vy+=b.g*d;
+    if(b.wave){ b.age+=d; b.x=b.ox+Math.sin(b.age*b.wave.f+b.wave.ph)*b.wave.amp; }
     if(b.home){ const want=Math.atan2(hp.y-b.y,hp.x-b.x); let cur=Math.atan2(b.vy,b.vx); let diff=Math.atan2(Math.sin(want-cur),Math.cos(want-cur)); cur+=clamp(diff,-b.home*d,b.home*d); const sp=hyp(b.vx,b.vy); b.vx=Math.cos(cur)*sp; b.vy=Math.sin(cur)*sp; }
     b.x+=b.vx*d; b.y+=b.vy*d;
     if(b.life<=0||b.y<-40||b.y>H+30||b.x<-30||b.x>W+30)G.eb.splice(G.eb.indexOf(b),1);
