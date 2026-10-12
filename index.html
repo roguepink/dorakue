@@ -400,12 +400,12 @@ function saveBest(){ if(G.gold>best){best=G.gold; try{localStorage.setItem('yt_b
 function makeMember(r){ return {...r,maxHp:r.hp,alive:true,x:G.head.x,y:G.head.y+40,cd:rnd(0,.5),inv:1,t:0,t2:0,bob:0,nextSp:rnd(4,7)}; }
 function newGame(save){
   G={state:'play',t:0,stage:0,w:{sword:1,bow:1,boom:1},wcur:0,mageLv:1,stageT:0,phase:'intro',phaseT:0,enemies:[],pb:[],eb:[],drops:[],parts:[],texts:[],beams:[],rings:[],fx:[],msgs:[],
-    head:{x:W/2,y:H-200},trail:[],mp:10,mpMax:30,weapon:0,gold:0,kills:0,spawnT:2,boss:null,bossDying:null,shake:0,flash:null,banner:null,spellBanner:null,
+    head:{x:W/2,y:H-200},trail:[],mp:20,mpMax:60,weapon:0,gold:0,kills:0,spawnT:2,boss:null,bossDying:null,shake:0,flash:null,banner:null,spellBanner:null,
     menu:{open:false,sel:0},bgY:0,dead:false,overT:0,clearT:0,lastKillMsg:-9,paused:false,lastMove:0};
   for(let y=G.head.y+150;y>=G.head.y;y-=4)G.trail.push({x:G.head.x,y});
   party=[makeMember(ROLES[0])]; party[0].y=G.head.y;
   let st=0;
-  if(save){ st=save.stage; G.w=Object.assign({sword:1,bow:1,boom:1},save.w||{}); G.wcur=save.wcur||0; G.mageLv=save.mageLv||1; G.gold=save.gold||0; G.kills=save.kills||0;
+  if(save){ st=save.stage; G.w=Object.assign({sword:1,bow:1,boom:1},save.w||{}); G.wcur=save.wcur||0; G.mageLv=save.mageLv||1; G.gold=save.gold||0; G.kills=save.kills||0; G.mp=20;
     for(let i=1;i<Math.min(st,ROLES.length);i++)party.push(makeMember(ROLES[i])); }
   startStage(st);
   if(save)addMsg('つづきから はじめた！');
