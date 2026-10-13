@@ -69,7 +69,7 @@ const AU={ctx:null,on:true,
       if(SEQ.pending){const p=SEQ.pending;SEQ.pending=null;SEQ.play(p);}
     }catch(e){}
   },
-  resume(){ if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume(); },
+  resume(){ if(this.ctx&&this.ctx.state==='suspended'&&audioWanted())this.ctx.resume(); },
   toggle(){ this.on=!this.on; if(this.master)this.master.gain.value=this.on?0.6:0; },
   now(){ return this.ctx?this.ctx.currentTime:0; },
   tone(o){
@@ -411,6 +411,13 @@ function titleOpts(){ const o=[{k:'new',label:nmUnlocked()?'おもてから は�
 const TITLE_Y0=500, TITLE_DY=28;
 function clearSave(){ try{ localStorage.removeItem('yt_save'); }catch(e){} }
 function armHistory(){ try{ history.pushState({yt:1},''); }catch(e){} }
+// ---- 画面を離れたら音を止める（戻るボタン・アプリ切りかえ・タブ切りかえ・ページ移動）
+function audioWanted(){ return !document.hidden&&!(G&&G.paused); }
+function syncAudio(){ if(!AU.ctx)return; const want=audioWanted(); if(want&&AU.ctx.state==='suspended')AU.ctx.resume(); else if(!want&&AU.ctx.state==='running')AU.ctx.suspend(); }
+function goAway(){ if(G&&G.state==='play')G.paused=true; if(AU.ctx&&AU.ctx.state==='running')AU.ctx.suspend(); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden)goAway(); else syncAudio(); });
+addEventListener('pagehide',goAway);
+addEventListener('pageshow',syncAudio);
 addEventListener('popstate',()=>{ if(G&&G.state==='play'){ G.paused=true; armHistory(); } else if(G){ G=null; toTitle(); armHistory(); } });
 function saveBest(){ if(G.gold>best){best=G.gold; try{localStorage.setItem('yt_best',String(best));}catch(e){}} }
 function makeMember(r){ return {...r,maxHp:r.hp,alive:true,x:G.head.x,y:G.head.y+40,cd:rnd(0,.5),inv:1,t:0,t2:0,bob:0,nextSp:rnd(4,7)}; }
@@ -1435,7 +1442,7 @@ function draw(){
 let last=performance.now();
 function frame(now){
   let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
-  try{ update(dt); draw(); }catch(err){ console.error(err); }
+  try{ update(dt); draw(); syncAudio(); }catch(err){ console.error(err); }
   requestAnimationFrame(frame);
 }
 toTitle();
