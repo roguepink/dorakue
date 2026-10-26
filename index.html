@@ -7,6 +7,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="ゆうしゃ">
 <meta name="description" content="レトロRPG風の縦スクロールシューティング。勇者たちの隊列を操作し、呪文コマンドで魔王を倒せ！">
 <title>ゆうしゃの たいれつ</title>
 <!-- LINE などに貼ったときのプレビュー（ゲームの絵と題名を出す） -->
@@ -24,10 +28,28 @@
   html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;}
   body{display:flex;align-items:center;justify-content:center;}
   canvas{display:block;}
+  #igHelp{color:#fff;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo","Noto Sans JP",system-ui,sans-serif;} /* はじめの画面の案内の字 */
 </style>
 </head>
 <body>
 <canvas id="c" width="360" height="640"></canvas>
+<script>
+  // はじめの画面(Google Play 風: インストールして遊ぶ / このまま遊ぶ)。install.js が出す
+  window.INSTALL_GATE = {
+    id: 'dorakue', name: 'ゆうしゃの たいれつ', icon: 'icon-192.png', color: '#3a6cf0',
+    tagline: '昔のRPGふうの 縦スクロールシューティング',
+    badges: ['無料', '広告なし', '登録なし', 'スマホは縦向き'],
+    shots: ['shots/1.jpg', 'shots/2.jpg', 'shots/3.jpg', 'shots/4.jpg', 'shots/5.jpg'],
+    desc: '勇者がひとりで旅に出て、章を進むごとに戦士・魔法使い・僧侶が仲間になり、一列にならんで進むシューティングです。攻撃は自動。じゅもんで炎や氷の魔法を使い、全部で20の章を進みます。',
+    points: ['武器は「けん」「ゆみ」「ブーメラン」の3つ。拾ったアイテムで強くなる', '仲間が倒れると「ひつぎ」になって後ろをついてくる。僧侶がいれば生き返ることも', '魔王を倒すと「うらのせかい」が始まる。怖い魔物たちの10章'],
+    playLabel: '▶ このまま遊ぶ'
+  };
+  // ホーム画面に入れたあと、電波がなくても開けるようにする(sw.js)
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+</script>
+<script src="install.js"></script>
 <script>
 'use strict';
 // =====================================================================
